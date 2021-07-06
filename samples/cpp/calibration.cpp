@@ -451,74 +451,74 @@ int main( int argc, char** argv )
                 return fprintf( stderr, "Unknown pattern type\n" ), -1;
         }
 
-       // improve the found corners' coordinate accuracy
-        if( pattern == CHESSBOARD && found) cornerSubPix( viewGray, pointbuf, Size(11,11),
-            Size(-1,-1), TermCriteria( TermCriteria::EPS+TermCriteria::COUNT, 30, 0.1 ));
-
-        if( mode == CAPTURING && found &&
-           (!capture.isOpened() || clock() - prevTimestamp > delay*1e-3*CLOCKS_PER_SEC) )
-        {
-            imagePoints.push_back(pointbuf);
-            prevTimestamp = clock();
-            blink = capture.isOpened();
-        }
-
-        if(found)
-            drawChessboardCorners( view, boardSize, Mat(pointbuf), found );
-
-        string msg = mode == CAPTURING ? "100/100" :
-            mode == CALIBRATED ? "Calibrated" : "Press 'g' to start";
-        int baseLine = 0;
-        Size textSize = getTextSize(msg, 1, 1, 1, &baseLine);
-        Point textOrigin(view.cols - 2*textSize.width - 10, view.rows - 2*baseLine - 10);
-
-        if( mode == CAPTURING )
-        {
-            if(undistortImage)
-                msg = format( "%d/%d Undist", (int)imagePoints.size(), nframes );
-            else
-                msg = format( "%d/%d", (int)imagePoints.size(), nframes );
-        }
-
-        putText( view, msg, textOrigin, 1, 1,
-                 mode != CALIBRATED ? Scalar(0,0,255) : Scalar(0,255,0));
-
-        if( blink )
-            bitwise_not(view, view);
-
-        if( mode == CALIBRATED && undistortImage )
-        {
-            Mat temp = view.clone();
-            undistort(temp, view, cameraMatrix, distCoeffs);
-        }
-
-        imshow("Image View", view);
-        char key = (char)waitKey(capture.isOpened() ? 50 : 500);
-
-        if( key == 27 )
-            break;
-
-        if( key == 'u' && mode == CALIBRATED )
-            undistortImage = !undistortImage;
-
-        if( capture.isOpened() && key == 'g' )
-        {
-            mode = CAPTURING;
-            imagePoints.clear();
-        }
-
-        if( mode == CAPTURING && imagePoints.size() >= (unsigned)nframes )
-        {
-            if( runAndSave(outputFilename, imagePoints, imageSize,
-                       boardSize, pattern, squareSize, aspectRatio,
-                       flags, cameraMatrix, distCoeffs,
-                       writeExtrinsics, writePoints))
-                mode = CALIBRATED;
-            else
-                mode = DETECTION;
-            if( !capture.isOpened() )
-                break;
-        }
+//       // improve the found corners' coordinate accuracy
+//        if( pattern == CHESSBOARD && found) cornerSubPix( viewGray, pointbuf, Size(11,11),
+//            Size(-1,-1), TermCriteria( TermCriteria::EPS+TermCriteria::COUNT, 30, 0.1 ));
+//
+//        if( mode == CAPTURING && found &&
+//           (!capture.isOpened() || clock() - prevTimestamp > delay*1e-3*CLOCKS_PER_SEC) )
+//        {
+//            imagePoints.push_back(pointbuf);
+//            prevTimestamp = clock();
+//            blink = capture.isOpened();
+//        }
+//
+//        if(found)
+//            drawChessboardCorners( view, boardSize, Mat(pointbuf), found );
+//
+//        string msg = mode == CAPTURING ? "100/100" :
+//            mode == CALIBRATED ? "Calibrated" : "Press 'g' to start";
+//        int baseLine = 0;
+//        Size textSize = getTextSize(msg, 1, 1, 1, &baseLine);
+//        Point textOrigin(view.cols - 2*textSize.width - 10, view.rows - 2*baseLine - 10);
+//
+//        if( mode == CAPTURING )
+//        {
+//            if(undistortImage)
+//                msg = format( "%d/%d Undist", (int)imagePoints.size(), nframes );
+//            else
+//                msg = format( "%d/%d", (int)imagePoints.size(), nframes );
+//        }
+//
+//        putText( view, msg, textOrigin, 1, 1,
+//                 mode != CALIBRATED ? Scalar(0,0,255) : Scalar(0,255,0));
+//
+//        if( blink )
+//            bitwise_not(view, view);
+//
+//        if( mode == CALIBRATED && undistortImage )
+//        {
+//            Mat temp = view.clone();
+//            undistort(temp, view, cameraMatrix, distCoeffs);
+//        }
+//
+//        imshow("Image View", view);
+//        char key = (char)waitKey(capture.isOpened() ? 50 : 500);
+//
+//        if( key == 27 )
+//            break;
+//
+//        if( key == 'u' && mode == CALIBRATED )
+//            undistortImage = !undistortImage;
+//
+//        if( capture.isOpened() && key == 'g' )
+//        {
+//            mode = CAPTURING;
+//            imagePoints.clear();
+//        }
+//
+//        if( mode == CAPTURING && imagePoints.size() >= (unsigned)nframes )
+//        {
+//            if( runAndSave(outputFilename, imagePoints, imageSize,
+//                       boardSize, pattern, squareSize, aspectRatio,
+//                       flags, cameraMatrix, distCoeffs,
+//                       writeExtrinsics, writePoints))
+//                mode = CALIBRATED;
+//            else
+//                mode = DETECTION;
+//            if( !capture.isOpened() )
+//                break;
+//        }
     }
 
     if( !capture.isOpened() && showUndistorted )
