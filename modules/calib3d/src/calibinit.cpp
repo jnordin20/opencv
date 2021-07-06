@@ -83,7 +83,9 @@ using namespace std;
 
 //#define DEBUG_CHESSBOARD
 
-#ifdef DEBUG_CHESSBOARD
+#define DEBUG_PERF
+
+#ifdef DEBUG_PERF
 static int PRINTF( const char* fmt, ... )
 {
     va_list args;
@@ -425,6 +427,7 @@ int cvFindChessboardCorners( const void* arr, CvSize pattern_size,
                              CvPoint2D32f* out_corners, int* out_corner_count,
                              int flags )
 {
+    PRINTF("[PERF] Chessboard begin\n");
     int found = 0;
     CvCBQuad *quads = 0;
     CvCBCorner *corners = 0;
@@ -469,6 +472,7 @@ int cvFindChessboardCorners( const void* arr, CvSize pattern_size,
         {
             if (checkChessboard(img, pattern_size) <= 0)
             {
+                PRINTF("[PERF] Chessboard first: %d\n", found);
                 return found;
             }
         }
@@ -498,13 +502,13 @@ int cvFindChessboardCorners( const void* arr, CvSize pattern_size,
         cvFree(&quads);
         cvFree(&corners);
         int quad_count = icvGenerateQuads( &quads, &corners, storage, thresh_img_new, flags, &max_quad_buf_size );
-        PRINTF("Quad count: %d/%d\n", quad_count, (pattern_size.width/2+1)*(pattern_size.height/2+1));
+        PRINTF("[PERF] Quad count: %d/%d\n", quad_count, (pattern_size.width/2+1)*(pattern_size.height/2+1));
         SHOW_QUADS("New quads", thresh_img_new, quads, quad_count);
         if (processQuads(quads, quad_count, pattern_size, max_quad_buf_size, storage, corners, out_corners, out_corner_count, prev_sqr_size))
             found = 1;
     }
 
-    PRINTF("Chessboard detection result 0: %d\n", found);
+    PRINTF("[PERF] Chessboard detection result 0: %d\n", found);
 
     // revert to old, slower, method if detection failed
     if (!found)
@@ -517,7 +521,7 @@ int cvFindChessboardCorners( const void* arr, CvSize pattern_size,
         Mat thresh_img;
         prev_sqr_size = 0;
 
-        PRINTF("Fallback to old algorithm\n");
+        PRINTF("[PERF] Fallback to old algorithm\n");
         const bool useAdaptive = flags & CV_CALIB_CB_ADAPTIVE_THRESH;
         if (!useAdaptive)
         {
@@ -563,7 +567,7 @@ int cvFindChessboardCorners( const void* arr, CvSize pattern_size,
                 cvFree(&quads);
                 cvFree(&corners);
                 int quad_count = icvGenerateQuads( &quads, &corners, storage, thresh_img, flags, &max_quad_buf_size);
-                PRINTF("Quad count: %d/%d\n", quad_count, (pattern_size.width/2+1)*(pattern_size.height/2+1));
+                PRINTF("[PERF] Quad count: %d/%d\n", quad_count, (pattern_size.width/2+1)*(pattern_size.height/2+1));
                 SHOW_QUADS("Old quads", thresh_img, quads, quad_count);
                 if (processQuads(quads, quad_count, pattern_size, max_quad_buf_size, storage, corners, out_corners, out_corner_count, prev_sqr_size))
                     found = 1;
@@ -571,12 +575,12 @@ int cvFindChessboardCorners( const void* arr, CvSize pattern_size,
         }
     }
 
-    PRINTF("Chessboard detection result 1: %d\n", found);
+    PRINTF("[PERF] Chessboard detection result 1: %d\n", found);
 
     if( found )
         found = icvCheckBoardMonotony( out_corners, pattern_size );
 
-    PRINTF("Chessboard detection result 2: %d\n", found);
+    PRINTF("[PERF] Chessboard detection result 2: %d\n", found);
 
     // check that none of the found corners is too close to the image boundary
     if( found )
@@ -592,7 +596,7 @@ int cvFindChessboardCorners( const void* arr, CvSize pattern_size,
         found = k == pattern_size.width*pattern_size.height;
     }
 
-    PRINTF("Chessboard detection result 3: %d\n", found);
+    PRINTF("[PERF] Chessboard detection result 3: %d\n", found);
 
     if( found )
     {
@@ -625,6 +629,7 @@ int cvFindChessboardCorners( const void* arr, CvSize pattern_size,
     }
     cvFree(&quads);
     cvFree(&corners);
+    PRINTF("[PERF] Chessboard end: %d\n", found);
     return found;
 }
 
@@ -750,7 +755,7 @@ icvOrderFoundConnectedQuads( int quad_count, CvCBQuad **quads,
             // just do inside quads
             if (neighbor && neighbor->ordered == false && neighbor->count == 4)
             {
-                PRINTF("col: %d  row: %d\n", col, row);
+                PRINTF("[PERF] col: %d  row: %d\n", col, row);
                 icvOrderQuad(neighbor, q->corners[i], (i+2)%4); // set in order
                 neighbor->ordered = true;
                 neighbor->row = row;
@@ -761,7 +766,7 @@ icvOrderFoundConnectedQuads( int quad_count, CvCBQuad **quads,
     }
 
     for (int i=col_min; i<=col_max; i++)
-        PRINTF("HIST[%d] = %d\n", i, col_hist[i]);
+        PRINTF("[PERF] HIST[%d] = %d\n", i, col_hist[i]);
 
     // analyze inner quad structure
     int w = pattern_size.width - 1;
@@ -777,27 +782,27 @@ icvOrderFoundConnectedQuads( int quad_count, CvCBQuad **quads,
         w = pattern_size.height - 1;
     }
 
-    PRINTF("Size: %dx%d  Pattern: %dx%d\n", dcol, drow, w, h);
+    PRINTF("[PERF] Size: %dx%d  Pattern: %dx%d\n", dcol, drow, w, h);
 
     // check if there are enough inner quads
     if (dcol < w || drow < h)   // found enough inner quads?
     {
-        PRINTF("Too few inner quad rows/cols\n");
+        PRINTF("[PERF] Too few inner quad rows/cols\n");
         return 0;   // no, return
     }
 #ifdef ENABLE_TRIM_COL_ROW
     // too many columns, not very common
     if (dcol == w+1)    // too many, trim
     {
-        PRINTF("Trimming cols\n");
+        PRINTF("T[PERF] rimming cols\n");
         if (col_hist[col_max] > col_hist[col_min])
         {
-            PRINTF("Trimming left col\n");
+            PRINTF("T[PERF] rimming left col\n");
             quad_count = icvTrimCol(quads,quad_count,col_min,-1);
         }
         else
         {
-            PRINTF("Trimming right col\n");
+            PRINTF("T[PERF] rimming right col\n");
             quad_count = icvTrimCol(quads,quad_count,col_max,+1);
         }
     }
@@ -805,15 +810,15 @@ icvOrderFoundConnectedQuads( int quad_count, CvCBQuad **quads,
     // too many rows, not very common
     if (drow == h+1)    // too many, trim
     {
-        PRINTF("Trimming rows\n");
+        PRINTF("T[PERF] rimming rows\n");
         if (row_hist[row_max] > row_hist[row_min])
         {
-            PRINTF("Trimming top row\n");
+            PRINTF("T[PERF] rimming top row\n");
             quad_count = icvTrimRow(quads,quad_count,row_min,-1);
         }
         else
         {
-            PRINTF("Trimming bottom row\n");
+            PRINTF("T[PERF] rimming bottom row\n");
             quad_count = icvTrimRow(quads,quad_count,row_max,+1);
         }
     }
@@ -848,7 +853,7 @@ icvOrderFoundConnectedQuads( int quad_count, CvCBQuad **quads,
                     row <= row_max && row >= row_min)
                 {
                     // if so, set in order
-                    PRINTF("Adding inner: col: %d  row: %d\n", col, row);
+                    PRINTF("[PERF] Adding inner: col: %d  row: %d\n", col, row);
                     found++;
                     icvOrderQuad(neighbor, quads[i]->corners[j], (j+2)%4);
                     neighbor->ordered = true;
@@ -863,7 +868,7 @@ icvOrderFoundConnectedQuads( int quad_count, CvCBQuad **quads,
     //   which are missing
     if (found > 0)
     {
-        PRINTF("Found %d inner quads not connected to outer quads, repairing\n", found);
+        PRINTF("[PERF] Found %d inner quads not connected to outer quads, repairing\n", found);
         for (int i=0; i<quad_count && *all_count < max_quad_buf_size; i++)
         {
             if (quads[i]->count < 4 && quads[i]->ordered)
@@ -882,7 +887,7 @@ icvOrderFoundConnectedQuads( int quad_count, CvCBQuad **quads,
     // final trimming of outer quads
     if (dcol == w && drow == h) // found correct inner quads
     {
-        PRINTF("Inner bounds ok, check outer quads\n");
+        PRINTF("[PERF] Inner bounds ok, check outer quads\n");
         int rcount = quad_count;
         for (int i=quad_count-1; i>=0; i--) // eliminate any quad not connected to
             // an ordered quad
@@ -897,7 +902,7 @@ icvOrderFoundConnectedQuads( int quad_count, CvCBQuad **quads,
                 }
                 if (!outer) // not an outer quad, eliminate
                 {
-                    PRINTF("Removing quad %d\n", i);
+                    PRINTF("[PERF] Removing quad %d\n", i);
                     icvRemoveQuadFromGroup(quads,rcount,quads[i]);
                     rcount--;
                 }
