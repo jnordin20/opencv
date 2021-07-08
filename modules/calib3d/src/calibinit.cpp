@@ -472,7 +472,7 @@ int cvFindChessboardCorners( const void* arr, CvSize pattern_size,
         {
             if (checkChessboard(img, pattern_size) <= 0)
             {
-                PRINTF("[PERF] Chessboard first: %d\n", found);
+                PRINTF("[PERF] Chessboard CV_CALIB_CB_FAST_CHECK first: %d\n", found);
                 return found;
             }
         }
@@ -755,7 +755,7 @@ icvOrderFoundConnectedQuads( int quad_count, CvCBQuad **quads,
             // just do inside quads
             if (neighbor && neighbor->ordered == false && neighbor->count == 4)
             {
-                PRINTF("[PERF] col: %d  row: %d\n", col, row);
+//                PRINTF("[PERF] col: %d  row: %d\n", col, row);
                 icvOrderQuad(neighbor, q->corners[i], (i+2)%4); // set in order
                 neighbor->ordered = true;
                 neighbor->row = row;
@@ -765,8 +765,8 @@ icvOrderFoundConnectedQuads( int quad_count, CvCBQuad **quads,
         }
     }
 
-    for (int i=col_min; i<=col_max; i++)
-        PRINTF("[PERF] HIST[%d] = %d\n", i, col_hist[i]);
+//    for (int i=col_min; i<=col_max; i++)
+//        PRINTF("[PERF] HIST[%d] = %d\n", i, col_hist[i]);
 
     // analyze inner quad structure
     int w = pattern_size.width - 1;

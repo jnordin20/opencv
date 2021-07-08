@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-
+#include <chrono>
 using namespace cv;
 using namespace std;
 
@@ -402,6 +402,8 @@ int main( int argc, char** argv )
 
     namedWindow( "Image View", 1 );
 
+    printf( "num %d\n", nframes);
+    auto start_time = std::chrono::high_resolution_clock::now();
     for(i = 0;;i++)
     {
         Mat view, viewGray;
@@ -413,16 +415,19 @@ int main( int argc, char** argv )
             capture >> view0;
             view0.copyTo(view);
         }
-        else if( i < (int)imageList.size() )
+        else if( i < (int)imageList.size() ) {
+//            printf( "imread %d -> %s\n", i, imageList[i].c_str());
             view = imread(imageList[i], 1);
+        }
 
         if(view.empty())
         {
-            if( imagePoints.size() > 0 )
+            if( imagePoints.size() > 0 ) {
                 runAndSave(outputFilename, imagePoints, imageSize,
                            boardSize, pattern, squareSize, aspectRatio,
                            flags, cameraMatrix, distCoeffs,
                            writeExtrinsics, writePoints);
+            }
             break;
         }
 
@@ -520,6 +525,9 @@ int main( int argc, char** argv )
 //                break;
 //        }
     }
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() / 1.0e3;
+    printf( "Took %f ms", duration_ms );
 
     if( !capture.isOpened() && showUndistorted )
     {
