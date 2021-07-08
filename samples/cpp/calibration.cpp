@@ -634,9 +634,9 @@ int main( int argc, char** argv )
     int num_detections = std::count(detection_found.begin(), detection_found.end(), 1);
     std::cout << "Num detections " << num_detections << " of " << detection_found.size() << std::endl;
     std::stringstream table;
-    table << detection_found_stats << " " << detection_timings_ms_stats << "\n";
-    std::cout << "[         num keypoints         ] [     detection timings (ms)    ] \n"
-              << "[    min    mean     max     std] [    min    mean     max     std] \n"
+    table << detection_timings_ms_stats << "\n";
+    std::cout << "[     detection timings (ms)    ] \n"
+              << "[    min    mean     max     std] \n"
               << table.str() << "\n";
     for (size_t i{0}; i < detection_timings_ms.size(); ++i) {
         std::cout << "Found " << detection_found[i] << " frame " << i << " : " << detection_timings_ms[i] << " ms " << std::endl;
