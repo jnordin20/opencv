@@ -11,6 +11,8 @@
 #include <string.h>
 #include <time.h>
 #include <chrono>
+#include <iomanip>
+#include <iostream>
 using namespace cv;
 using namespace std;
 
@@ -293,6 +295,75 @@ static bool runAndSave(const string& outputFilename,
     return ok;
 }
 
+template<typename T>
+struct Statistics
+{
+    T min  = 0;
+    T mean = 0;
+    T max  = 0;
+    T std  = 0;
+
+    bool computed = false;
+};
+
+template <typename T>
+static std::ostream& operator<<(std::ostream& os, const Statistics<T>& statistics)
+{
+    if (statistics.computed)
+    {
+        return (os
+                << "[" << std::setw(7) << std::setprecision(2) << std::fixed << statistics.min
+                << " " << std::setw(7) << std::setprecision(2) << std::fixed << statistics.mean
+                << " " << std::setw(7) << std::setprecision(2) << std::fixed << statistics.max
+                << " " << std::setw(7) << std::setprecision(2) << std::fixed << statistics.std
+                << "]");
+    }
+    else
+    {
+        return (os << "[                               ]");
+    }
+}
+
+template<typename T>
+static Statistics<T> computeStatistics(const std::vector<T>& vec)
+{
+    Statistics<T> statistics;
+
+    if (vec.size() > 0)
+    {
+        // Mean, min, max
+        double accum = 0;
+        T min =  std::numeric_limits<T>::max();
+        T max = -std::numeric_limits<T>::max();
+        for (const T& v : vec)
+        {
+            accum += v;
+            min = std::min(min, v);
+            max = std::max(max, v);
+        }
+        const double mean = accum / vec.size();
+
+        // Standard deviation
+        double std = 0;
+        for (const T& v : vec)
+        {
+            const double vv = (v - mean);
+            std += vv * vv;
+        }
+        std = std::sqrt(std / vec.size());
+
+        // Done
+        statistics.min  = min;
+        statistics.mean = mean;
+        statistics.max  = max;
+        statistics.std  = std;
+
+        statistics.computed = true;
+    }
+
+    return statistics;
+}
+
 
 int main( int argc, char** argv )
 {
@@ -403,6 +474,10 @@ int main( int argc, char** argv )
     namedWindow( "Image View", 1 );
 
     printf( "num %d\n", nframes);
+    std::vector<double> detection_timings_ms;
+    detection_timings_ms.reserve(nframes);
+    std::vector<int> detection_found;
+    detection_found.reserve(nframes);
     auto start_time = std::chrono::high_resolution_clock::now();
     for(i = 0;;i++)
     {
@@ -439,7 +514,8 @@ int main( int argc, char** argv )
         vector<Point2f> pointbuf;
         cvtColor(view, viewGray, COLOR_BGR2GRAY);
 
-        bool found;
+        auto t_a = std::chrono::high_resolution_clock::now();
+        bool found{false};
         switch( pattern )
         {
             case CHESSBOARD:
@@ -455,6 +531,9 @@ int main( int argc, char** argv )
             default:
                 return fprintf( stderr, "Unknown pattern type\n" ), -1;
         }
+        auto t_b = std::chrono::high_resolution_clock::now();
+        detection_timings_ms.push_back(std::chrono::duration_cast<std::chrono::microseconds>(t_b - t_a).count() / 1.0e3);
+        detection_found.push_back(static_cast<int>(found));
 
 //       // improve the found corners' coordinate accuracy
 //        if( pattern == CHESSBOARD && found) cornerSubPix( viewGray, pointbuf, Size(11,11),
@@ -527,7 +606,7 @@ int main( int argc, char** argv )
     }
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() / 1.0e3;
-    printf( "Took %f ms", duration_ms );
+    printf( "Took %f ms\n", duration_ms );
 
     if( !capture.isOpened() && showUndistorted )
     {
@@ -550,5 +629,17 @@ int main( int argc, char** argv )
         }
     }
 
+    Statistics<double> detection_timings_ms_stats = computeStatistics(detection_timings_ms);
+    Statistics<int> detection_found_stats = computeStatistics(detection_found);
+    int num_detections = std::count(detection_found.begin(), detection_found.end(), 1);
+    std::cout << "Num detections " << num_detections << " of " << detection_found.size() << std::endl;
+    std::stringstream table;
+    table << detection_found_stats << " " << detection_timings_ms_stats << "\n";
+    std::cout << "[         num keypoints         ] [     detection timings (ms)    ] \n"
+              << "[    min    mean     max     std] [    min    mean     max     std] \n"
+              << table.str() << "\n";
+    for (size_t i{0}; i < detection_timings_ms.size(); ++i) {
+        std::cout << "Found " << detection_found[i] << " frame " << i << " : " << detection_timings_ms[i] << " ms " << std::endl;
+    }
     return 0;
 }
